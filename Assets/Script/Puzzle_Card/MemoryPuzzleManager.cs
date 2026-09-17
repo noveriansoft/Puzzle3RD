@@ -6,6 +6,8 @@ using UnityEngine;
 public class MemoryPuzzleManager : MonoBehaviour
 {
     public GameObject puzzlePanel;
+    public PuzzleInteractable puzzleInteractable;
+    public ThirdPersonController playerController;
 
     public List<MemoryCard> cards;
 
@@ -101,8 +103,9 @@ public class MemoryPuzzleManager : MonoBehaviour
     {
         Debug.Log("Puzzle Solved");
 
-        // Close puzzle
-        // SetMovement(true)
+        playerController.SetMovement(true);
+        puzzleInteractable.ClosePuzzle();
+        //puzzlePanel.SetActive(false);
     }
 
     public void ResetPuzzle()
@@ -125,6 +128,8 @@ public class MemoryPuzzleManager : MonoBehaviour
     {
         ResetPuzzle();
 
-        puzzlePanel.SetActive(false);
+        playerController.SetMovement(true);
+        puzzleInteractable.ClosePuzzle();
+        //puzzlePanel.SetActive(false);
     }
 }
