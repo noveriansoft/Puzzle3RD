@@ -14,8 +14,8 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - Build location: 
 
 ## Credits
-3D Character Model : https://elbolilloduro.itch.io/characters-psx
-3D Main Character Model : https://jashi-psx.itch.io/simple-character-psx-asset
-3D Mart : https://elbolilloduro.itch.io/6twelve
-3D Bus : https://elbolilloduro.itch.io/bus-stop
-3D Character Animation : https://quaternius.itch.io/universal-animation-library
+- 3D Character Model : https://elbolilloduro.itch.io/characters-psx
+- 3D Main Character Model : https://jashi-psx.itch.io/simple-character-psx-asset
+- 3D Mart : https://elbolilloduro.itch.io/6twelve
+- 3D Bus : https://elbolilloduro.itch.io/bus-stop
+- 3D Character Animation : https://quaternius.itch.io/universal-animation-library
