@@ -10,8 +10,10 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - run exe file
 - Play
 
+## Build & Download
 - Engine & version used: Unity 6000.0.57f1
-- Build location: 
+- Build location: https://github.com/noveriansoft/Puzzle3RD/releases/tag/game
+- Video Demo : https://youtu.be/uWBvJC1LIOg
 
 ## Credits
 - 3D Character Model : https://elbolilloduro.itch.io/characters-psx
