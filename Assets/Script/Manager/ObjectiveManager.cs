@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using Unity.VisualScripting;
 
 public class ObjectiveManager : MonoBehaviour
 {
@@ -7,6 +8,9 @@ public class ObjectiveManager : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private TMP_Text objectiveText;
+
+    [Header("Obj")]
+    [SerializeField] private GameObject busObj;
 
     [Header("Objective Text")]
     [SerializeField]
@@ -41,6 +45,7 @@ public class ObjectiveManager : MonoBehaviour
     public void CompleteCardObjective()
     {
         SetObjective(2);
+        busObj.gameObject.SetActive(true);
     }
 
     private void SetObjective(int objectiveIndex)

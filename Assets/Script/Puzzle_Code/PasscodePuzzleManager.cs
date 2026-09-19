@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 using TMPro;
 
 public class PasscodePuzzleManager : MonoBehaviour
@@ -17,6 +18,7 @@ public class PasscodePuzzleManager : MonoBehaviour
     [Header("Doors")]
     [SerializeField] private Transform leftDoor;
     [SerializeField] private Transform rightDoor;
+    [SerializeField] private float doorOpenDuration = 1f;
 
     [SerializeField] private float leftDoorOpenZ = -120f;
     [SerializeField] private float rightDoorOpenZ = 120f;
@@ -75,28 +77,75 @@ public class PasscodePuzzleManager : MonoBehaviour
         Debug.Log("Passcode Puzzle Solved");
 
         OpenDoors();
+        puzzleInteractable.DisableInteraction();
+
+    }
+
+    #region DOOR COUROUTINE
+    private void OpenDoors()
+    {
+        //if (leftDoor != null)
+        //{
+        //    Vector3 rot = leftDoor.localEulerAngles;
+        //    rot.z = leftDoorOpenZ;
+        //    leftDoor.localEulerAngles = rot;
+        //}
+
+        //if (rightDoor != null)
+        //{
+        //    Vector3 rot = rightDoor.localEulerAngles;
+        //    rot.z = rightDoorOpenZ;
+        //    rightDoor.localEulerAngles = rot;
+        //}
+
+        StartCoroutine(OpenDoorsRoutine());
+    }
+
+    private IEnumerator OpenDoorsRoutine()
+    {
+        Quaternion leftStart = leftDoor.localRotation;
+        Quaternion rightStart = rightDoor.localRotation;
+
+        Quaternion leftTarget = Quaternion.Euler(
+            leftDoor.localEulerAngles.x,
+            leftDoor.localEulerAngles.y,
+            leftDoorOpenZ
+        );
+
+        Quaternion rightTarget = Quaternion.Euler(
+            rightDoor.localEulerAngles.x,
+            rightDoor.localEulerAngles.y,
+            rightDoorOpenZ
+        );
+
+        float timer = 0f;
+
+        while (timer < doorOpenDuration)
+        {
+            timer += Time.deltaTime;
+
+            float t = Mathf.Clamp01(timer / doorOpenDuration);
+
+            if (leftDoor != null)
+                leftDoor.localRotation = Quaternion.Lerp(leftStart, leftTarget, t);
+
+            if (rightDoor != null)
+                rightDoor.localRotation = Quaternion.Lerp(rightStart, rightTarget, t);
+
+            yield return null;
+        }
+
+        if (leftDoor != null)
+            leftDoor.localRotation = leftTarget;
+
+        if (rightDoor != null)
+            rightDoor.localRotation = rightTarget;
 
         ObjectiveManager.Instance.CompleteDoorObjective();
         puzzleInteractable.ClosePuzzle();
-        puzzleInteractable.DisableInteraction();
+        
     }
-
-    private void OpenDoors()
-    {
-        if (leftDoor != null)
-        {
-            Vector3 rot = leftDoor.localEulerAngles;
-            rot.z = leftDoorOpenZ;
-            leftDoor.localEulerAngles = rot;
-        }
-
-        if (rightDoor != null)
-        {
-            Vector3 rot = rightDoor.localEulerAngles;
-            rot.z = rightDoorOpenZ;
-            rightDoor.localEulerAngles = rot;
-        }
-    }
+    #endregion
 
     public void ExitPuzzle()
     {
