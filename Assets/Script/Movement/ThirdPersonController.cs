@@ -35,17 +35,26 @@ public class ThirdPersonController : MonoBehaviour
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
 
-        // Keep the exact camera position from the scene
-        cameraOffset = cameraTransform.position - transform.position;
-
-        // Keep the original viewing direction
-        Vector3 originalLookPoint =
-            cameraTransform.position + cameraTransform.forward * 10f;
-
-        lookOffset = transform.InverseTransformPoint(originalLookPoint);
-
         cameraYaw = cameraTransform.eulerAngles.y;
         cameraPitch = cameraTransform.eulerAngles.x;
+
+        if (cameraPitch > 180f)
+            cameraPitch -= 360f;
+
+        Quaternion initialRotation =
+            Quaternion.Euler(cameraPitch, cameraYaw, 0f);
+
+        cameraOffset =
+            Quaternion.Inverse(initialRotation) *
+            (cameraTransform.position - transform.position);
+
+        Vector3 originalLookPoint =
+            cameraTransform.position +
+            cameraTransform.forward * 10f;
+
+        lookOffset =
+            Quaternion.Inverse(initialRotation) *
+            (originalLookPoint - transform.position);
     }
 
     private void Start()
@@ -81,13 +90,13 @@ public class ThirdPersonController : MonoBehaviour
             0f
         );
 
-        // Rotate the original camera offset around the player
         Vector3 offset = rotation * cameraOffset;
 
-        cameraTransform.position = transform.position + offset;
+        cameraTransform.position =
+            transform.position + offset;
 
-        // Keep the original camera framing
-        Vector3 target = transform.position + rotation * lookOffset;
+        Vector3 target =
+            transform.position + rotation * lookOffset;
 
         cameraTransform.LookAt(target);
     }

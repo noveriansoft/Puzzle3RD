@@ -9,12 +9,24 @@ public class PuzzleInteractable : MonoBehaviour
     [Header("Player")]
     public ThirdPersonController playerController;
 
+    [Header("UI")]
+    public GameObject pressEUI;
+
+    [Header("Trigger")]
+    public Collider triggerCollider;
+
     private bool playerInRange;
     private bool puzzleOpen;
 
     private void Start()
     {
         puzzlePanel.SetActive(false);
+
+        if (pressEUI != null)
+            pressEUI.SetActive(false);
+
+        if (triggerCollider == null)
+            triggerCollider = GetComponent<Collider>();
     }
 
     private void Update()
@@ -41,6 +53,9 @@ public class PuzzleInteractable : MonoBehaviour
         {
             playerInRange = true;
             playerController = player;
+
+            if (pressEUI != null)
+                pressEUI.SetActive(true);
         }
     }
 
@@ -52,12 +67,18 @@ public class PuzzleInteractable : MonoBehaviour
         if (player != null)
         {
             playerInRange = false;
+
+            if (pressEUI != null)
+                pressEUI.SetActive(false);
         }
     }
 
     public void OpenPuzzle()
     {
         puzzleOpen = true;
+
+        if (pressEUI != null)
+            pressEUI.SetActive(false);
 
         puzzlePanel.SetActive(true);
         playerController.SetMovement(false);
@@ -69,5 +90,20 @@ public class PuzzleInteractable : MonoBehaviour
 
         puzzlePanel.SetActive(false);
         playerController.SetMovement(true);
+
+        if (playerInRange && pressEUI != null)
+            pressEUI.SetActive(true);
+    }
+
+    public void DisableInteraction()
+    {
+        puzzleOpen = false;
+        playerInRange = false;
+
+        if (pressEUI != null)
+            pressEUI.SetActive(false);
+
+        if (triggerCollider != null)
+            triggerCollider.enabled = false;
     }
 }

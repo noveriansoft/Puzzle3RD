@@ -14,6 +14,13 @@ public class PasscodePuzzleManager : MonoBehaviour
     [Header("Interaction")]
     [SerializeField] private PuzzleInteractable puzzleInteractable;
 
+    [Header("Doors")]
+    [SerializeField] private Transform leftDoor;
+    [SerializeField] private Transform rightDoor;
+
+    [SerializeField] private float leftDoorOpenZ = -120f;
+    [SerializeField] private float rightDoorOpenZ = 120f;
+
     private string currentInput = "";
 
     private void Start()
@@ -67,7 +74,28 @@ public class PasscodePuzzleManager : MonoBehaviour
 
         Debug.Log("Passcode Puzzle Solved");
 
+        OpenDoors();
+
+        ObjectiveManager.Instance.CompleteDoorObjective();
         puzzleInteractable.ClosePuzzle();
+        puzzleInteractable.DisableInteraction();
+    }
+
+    private void OpenDoors()
+    {
+        if (leftDoor != null)
+        {
+            Vector3 rot = leftDoor.localEulerAngles;
+            rot.z = leftDoorOpenZ;
+            leftDoor.localEulerAngles = rot;
+        }
+
+        if (rightDoor != null)
+        {
+            Vector3 rot = rightDoor.localEulerAngles;
+            rot.z = rightDoorOpenZ;
+            rightDoor.localEulerAngles = rot;
+        }
     }
 
     public void ExitPuzzle()
@@ -103,5 +131,10 @@ public class PasscodePuzzleManager : MonoBehaviour
             if (i < maxDigits - 1)
                 inputText.text += " ";
         }
+    }
+
+    public string GetCorrectCode()
+    {
+        return correctCode;
     }
 }

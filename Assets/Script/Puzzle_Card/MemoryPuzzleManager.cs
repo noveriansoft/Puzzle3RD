@@ -103,8 +103,10 @@ public class MemoryPuzzleManager : MonoBehaviour
     {
         Debug.Log("Puzzle Solved");
 
+        ObjectiveManager.Instance.CompleteCardObjective();
         playerController.SetMovement(true);
         puzzleInteractable.ClosePuzzle();
+        puzzleInteractable.DisableInteraction();
         //puzzlePanel.SetActive(false);
     }
 
