@@ -8,6 +8,9 @@ public class ThirdPersonController : MonoBehaviour
     public float moveSpeed = 5f;
     public float rotationSpeed = 10f;
 
+    [Header("Animation")]
+    public Animator animator;
+
     [Header("Camera")]
     public Transform cameraTransform;
     public float mouseSensitivity = 3f;
@@ -119,6 +122,8 @@ public class ThirdPersonController : MonoBehaviour
             0f,
             input.y
         ).normalized;
+
+        animator.SetFloat("Speed", inputDir.magnitude);
 
         if (inputDir.magnitude > 0.1f)
         {
