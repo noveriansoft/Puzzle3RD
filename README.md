@@ -21,3 +21,4 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - 3D Mart : https://elbolilloduro.itch.io/6twelve
 - 3D Bus : https://elbolilloduro.itch.io/bus-stop
 - 3D Character Animation : https://quaternius.itch.io/universal-animation-library
+- Phone : https://retroassetslibrary.itch.io/psx-mobile-phone
