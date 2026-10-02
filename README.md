@@ -23,3 +23,4 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - 3D Character Animation : https://quaternius.itch.io/universal-animation-library
 - Phone : https://retroassetslibrary.itch.io/psx-mobile-phone
 - Car : https://moi0210.itch.io/a-suspicious-car-for-your-projects
+- Guns : https://codecola.itch.io/psx-retro-style-gun-kit
