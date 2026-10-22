@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dd57f5cc0414ed4080340baf95634fa, type: 3}
+  m_Name: Boss_2
+  m_EditorClassIdentifier: 
+  dialogueLines:
+  - speakerName: Boss
+    text: Hello, this is your first night, pretty sure you can't wait to work, but
+      listen, i still have problem with the shipment, but i still want you to go
+      to work untill dawn, okay?
+  - speakerName: You
+    text: Um.... what should i do if this mart dont have the goods, sir?
+  - speakerName: Boss
+    text: Just keep an eye on the mart until dawn, i'll call again if something happen,
+      okay?
+  - speakerName: You
+    text: Yes sir

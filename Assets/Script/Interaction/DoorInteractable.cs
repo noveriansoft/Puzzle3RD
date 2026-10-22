@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections;
 using UnityEngine.InputSystem;
+using StarterAssets;
 
 public class DoorInteractable : MonoBehaviour
 {
@@ -10,6 +11,8 @@ public class DoorInteractable : MonoBehaviour
     [Header("Door")]
     [SerializeField] private Transform door;
     [SerializeField] private float openZ = -120f;
+
+    [Header("Door Open X")]
     [SerializeField] private bool useOpenX;
     [SerializeField] private float openX = 0f;
     [SerializeField] private float openDuration = 1f;
@@ -44,7 +47,7 @@ public class DoorInteractable : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponent<ThirdPersonController>() != null)
+        if (other.GetComponent<FirstPersonController>() != null)
         {
             playerInRange = true;
 
@@ -55,7 +58,7 @@ public class DoorInteractable : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.GetComponent<ThirdPersonController>() != null)
+        if (other.GetComponent<FirstPersonController>() != null)
         {
             playerInRange = false;
 

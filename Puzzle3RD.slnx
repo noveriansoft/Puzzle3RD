@@ -1,4 +1,7 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Rowlan.Fullscreen.Editor.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Unity.StarterAssets.csproj" />
+  <Project Path="Rowlan.Fullscreen.Runtime.csproj" />
 </Solution>

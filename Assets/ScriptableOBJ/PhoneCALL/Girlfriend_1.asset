@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1dd57f5cc0414ed4080340baf95634fa, type: 3}
+  m_Name: Girlfriend_1
+  m_EditorClassIdentifier: 
+  dialogueLines:
+  - speakerName: You
+    text: Hello, i've seen your poster, I'd like to use your girlfriend rental service,
+      are you available this Sunday?
+  - speakerName: Rental GF Services
+    text: Hmm... i don't do that again, sorry
+  - speakerName: You
+    text: Why?
+  - speakerName: Rental GF Services
+    text: I am now a Game Programmer, i need Game Dev jobs, do u have any?
+  - speakerName: You
+    text: Oh, sorry i don't know any Game jobs....
+  - speakerName: Rental GF Services
+    text: That's sucks. anyway, thanks for calling, bye..
+  advanceToNextDialogue: 1

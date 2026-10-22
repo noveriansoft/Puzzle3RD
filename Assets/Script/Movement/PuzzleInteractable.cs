@@ -1,3 +1,4 @@
+using StarterAssets;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,7 +8,7 @@ public class PuzzleInteractable : MonoBehaviour
     public GameObject puzzlePanel;
 
     [Header("Player")]
-    public ThirdPersonController playerController;
+    public FirstPersonController playerController;
 
     [Header("UI")]
     public GameObject pressEUI;
@@ -46,8 +47,8 @@ public class PuzzleInteractable : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        ThirdPersonController player =
-            other.GetComponent<ThirdPersonController>();
+        FirstPersonController player =
+            other.GetComponent<FirstPersonController>();
 
         if (player != null)
         {
@@ -61,8 +62,8 @@ public class PuzzleInteractable : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        ThirdPersonController player =
-            other.GetComponent<ThirdPersonController>();
+        FirstPersonController player =
+            other.GetComponent<FirstPersonController>();
 
         if (player != null)
         {
