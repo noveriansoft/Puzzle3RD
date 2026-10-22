@@ -10,8 +10,10 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - run exe file
 - Play
 
+## Build & Download
 - Engine & version used: Unity 6000.0.57f1
-- Build location: 
+- Build location: https://github.com/noveriansoft/Puzzle3RD/releases/tag/game
+- Video Demo : https://youtu.be/uWBvJC1LIOg
 
 ## Credits
 - 3D Character Model : https://elbolilloduro.itch.io/characters-psx
@@ -19,3 +21,10 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - 3D Mart : https://elbolilloduro.itch.io/6twelve
 - 3D Bus : https://elbolilloduro.itch.io/bus-stop
 - 3D Character Animation : https://quaternius.itch.io/universal-animation-library
+- Phone : https://retroassetslibrary.itch.io/psx-mobile-phone
+- Car : https://moi0210.itch.io/a-suspicious-car-for-your-projects
+- Guns : https://codecola.itch.io/psx-retro-style-gun-kit
+- https://elbolilloduro.itch.io/paquete-de-modelos-psx-3
+- https://elbolilloduro.itch.io/paquete-de-modelos-low-poly-estilo-psx-2
+- https://elbolilloduro.itch.io/halloween
+- https://assetstore.unity.com/packages/vfx/shaders/simple-fake-volume-fog-299560#reviews
