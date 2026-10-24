@@ -28,3 +28,4 @@ if you want the Bad Ending, open the trashcan behind the mart, thats all.
 - https://elbolilloduro.itch.io/paquete-de-modelos-low-poly-estilo-psx-2
 - https://elbolilloduro.itch.io/halloween
 - https://assetstore.unity.com/packages/vfx/shaders/simple-fake-volume-fog-299560#reviews
+- ufo : https://obviouslydracula.itch.io/low-poly-low-res-ufo
