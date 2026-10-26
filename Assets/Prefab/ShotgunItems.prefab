@@ -5139,11 +5139,11 @@ MonoBehaviour:
   playerCamera: {fileID: 0}
   dialogueManager: {fileID: 0}
   fireRate: 0.7
-  damage: 10
+  damage: 100
   range: 120
   hitLayers:
     serializedVersion: 2
-    m_Bits: 23
+    m_Bits: 128
   pelletCount: 12
   spreadAngle: 0
   muzzleFlash: {fileID: 2369643087759402356}

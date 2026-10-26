@@ -16,6 +16,7 @@ public class EnvironmentEvent : MonoBehaviour
 
     private bool hasActivated;
 
+#if UNITY_EDITOR
     private void Update()
     {
         if (Keyboard.current != null &&
@@ -24,6 +25,8 @@ public class EnvironmentEvent : MonoBehaviour
             ActivateEvent();
         }
     }
+
+#endif
 
     public void ActivateEvent()
     {
