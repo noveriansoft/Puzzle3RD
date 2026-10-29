@@ -76,25 +76,33 @@ public class WaypointWalker : MonoBehaviour
             playerController = player.GetComponent<FirstPersonController>();
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
+        if (PauseManager.IsPaused || Time.timeScale <= 0f)
+            return;
+
         if (finished || isWaiting)
             return;
 
-        if (waypoints == null || waypoints.Length == 0)
+        if (rb == null ||
+            waypoints == null ||
+            waypoints.Length == 0 ||
+            currentWaypoint >= waypoints.Length)
+        {
             return;
+        }
 
         WaypointData waypoint = waypoints[currentWaypoint];
 
-        if (waypoint.point == null)
+        if (waypoint == null || waypoint.point == null)
             return;
 
-        Vector3 direction =
-            waypoint.point.position - transform.position;
-
+        Vector3 direction = waypoint.point.position - rb.position;
         direction.y = 0f;
 
-        if (direction.magnitude <= reachDistance)
+        float distance = direction.magnitude;
+
+        if (distance <= reachDistance)
         {
             ReachWaypoint();
             return;
@@ -102,12 +110,14 @@ public class WaypointWalker : MonoBehaviour
 
         Vector3 moveDirection = direction.normalized;
 
-        //transform.position +=
-        //    moveDirection * moveSpeed * Time.deltaTime;
+        // Clamp movement to avoid overshooting the waypoint.
+        float movementDistance = Mathf.Min(
+            Mathf.Max(0f, moveSpeed) * Time.fixedDeltaTime,
+            distance
+        );
 
         rb.MovePosition(
-        rb.position +
-        moveDirection * moveSpeed * Time.fixedDeltaTime
+            rb.position + moveDirection * movementDistance
         );
 
         if (moveDirection != Vector3.zero)
@@ -115,16 +125,70 @@ public class WaypointWalker : MonoBehaviour
             Quaternion targetRotation =
                 Quaternion.LookRotation(moveDirection);
 
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                targetRotation,
-                rotationSpeed * Time.deltaTime
+            rb.MoveRotation(
+                Quaternion.Slerp(
+                    rb.rotation,
+                    targetRotation,
+                    rotationSpeed * Time.fixedDeltaTime
+                )
             );
         }
 
         if (animator != null)
-            animator.SetFloat("Speed", 1f);
+            animator.SetFloat("Speed", movementDistance > 0f ? 1f : 0f);
     }
+
+    #region update backup
+    //private void Update()
+    //{
+    //    if (finished || isWaiting)
+    //        return;
+
+    //    if (waypoints == null || waypoints.Length == 0)
+    //        return;
+
+    //    WaypointData waypoint = waypoints[currentWaypoint];
+
+    //    if (waypoint.point == null)
+    //        return;
+
+    //    Vector3 direction =
+    //        waypoint.point.position - transform.position;
+
+    //    direction.y = 0f;
+
+    //    if (direction.magnitude <= reachDistance)
+    //    {
+    //        ReachWaypoint();
+    //        return;
+    //    }
+
+    //    Vector3 moveDirection = direction.normalized;
+
+    //    //transform.position +=
+    //    //    moveDirection * moveSpeed * Time.deltaTime;
+
+    //    rb.MovePosition(
+    //    rb.position +
+    //    moveDirection * moveSpeed * Time.fixedDeltaTime
+    //    );
+
+    //    if (moveDirection != Vector3.zero)
+    //    {
+    //        Quaternion targetRotation =
+    //            Quaternion.LookRotation(moveDirection);
+
+    //        transform.rotation = Quaternion.Slerp(
+    //            transform.rotation,
+    //            targetRotation,
+    //            rotationSpeed * Time.deltaTime
+    //        );
+    //    }
+
+    //    if (animator != null)
+    //        animator.SetFloat("Speed", 1f);
+    //}
+    #endregion
 
     private void ReachWaypoint()
     {
@@ -166,6 +230,12 @@ public class WaypointWalker : MonoBehaviour
 
             while (rotateTimer < 0.5f)
             {
+                if (PauseManager.IsPaused)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 rotateTimer += Time.deltaTime;
 
                 transform.rotation = Quaternion.Slerp(
@@ -233,6 +303,12 @@ public class WaypointWalker : MonoBehaviour
 
             while (Quaternion.Angle(transform.rotation, targetRotation) > 1f)
             {
+                if (PauseManager.IsPaused)
+                {
+                    yield return null;
+                    continue;
+                }
+
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRotation,
@@ -250,6 +326,13 @@ public class WaypointWalker : MonoBehaviour
 
         while (!interactionStarted)
         {
+            if (PauseManager.IsPaused)
+            {
+                SetNPCPressE(false);
+                yield return null;
+                continue;
+            }
+
             bool phoneIsHeld =
                 PhoneContactUI.Instance != null &&
                 PhoneContactUI.Instance.IsPhoneHeld;
@@ -287,7 +370,8 @@ public class WaypointWalker : MonoBehaviour
 
         // Tunggu dialog selesai
         yield return new WaitUntil(
-            () => !dialogueManager.IsDialogueActive
+            () => !PauseManager.IsPaused &&
+                  !dialogueManager.IsDialogueActive
         );
 
         // PLAYER BISA GERAK LAGI

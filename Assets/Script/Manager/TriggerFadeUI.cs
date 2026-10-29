@@ -18,7 +18,6 @@ public class TriggerFadeUI : MonoBehaviour
 
     [Header("Ending")]
     [SerializeField] private EndingManager endingManager;
-    [SerializeField] private EndingManager.EndingType endingType;
 
     private bool alreadyTriggered;
 
@@ -47,9 +46,6 @@ public class TriggerFadeUI : MonoBehaviour
 
             // Lock movement + unlock cursor
             playerController.SetMovement(false);
-
-            if (endingManager != null)
-                endingManager.ShowEnding(endingType);
 
             StartCoroutine(ShowUI());
         }

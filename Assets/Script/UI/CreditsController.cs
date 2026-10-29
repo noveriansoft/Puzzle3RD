@@ -1,7 +1,7 @@
-
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -9,10 +9,10 @@ using UnityEngine.InputSystem;
 
 public class CreditsController : MonoBehaviour
 {
-    [Header("Object")]
+    [Header("Credits Object")]
     [SerializeField] private GameObject creditsObject;
 
-    [Header("Fade")]
+    [Header("Credits Fade")]
     [SerializeField] private Image creditsImage;
     [SerializeField] private float fadeDuration = 1f;
 
@@ -22,12 +22,28 @@ public class CreditsController : MonoBehaviour
     [SerializeField] private float endY = -1500f;
     [SerializeField] private float scrollDuration = 20f;
 
+    [Header("Final Fade Object")]
+    [SerializeField] private GameObject finalFadeObject;
+    [SerializeField] private Image finalFadeImage;
+    [SerializeField] private float waitBeforeFinalFade = 3f;
+    [SerializeField] private float finalFadeDuration = 1f;
+
+    [Header("End Event")]
+    [SerializeField] private UnityEvent onReachedEnd;
+
     private Coroutine creditsCoroutine;
 
     private void Start()
     {
+        // Initialize alpha only when the credits system starts.
+        SetCreditsAlpha(0f);
+        SetFinalFadeAlpha(0f);
+
         if (creditsObject != null)
             creditsObject.SetActive(false);
+
+        if (finalFadeObject != null)
+            finalFadeObject.SetActive(false);
     }
 
 #if UNITY_EDITOR && ENABLE_INPUT_SYSTEM
@@ -41,70 +57,213 @@ public class CreditsController : MonoBehaviour
     }
 #endif
 
+    // Initial fade, scroll, final fade, and event.
     public void PlayCredits()
     {
+        StartCredits(true, true);
+    }
+
+    // No initial fade. Fade out credits after scrolling.
+    public void PlayCreditsOnly()
+    {
+        StartCredits(false, false);
+    }
+
+    // Initial fade, scroll, then fade out credits.
+    public void PlayCreditsWithInitialFade()
+    {
+        StartCredits(true, false);
+    }
+
+    // No initial fade, fade out credits, then final screen fade.
+    public void PlayCreditsWithFinalFade()
+    {
+        StartCredits(false, true);
+    }
+
+    private void StartCredits(bool useCreditsFade, bool useFinalFade)
+    {
         if (creditsCoroutine != null)
+        {
             StopCoroutine(creditsCoroutine);
+            creditsCoroutine = null;
+        }
 
         if (creditsObject != null)
             creditsObject.SetActive(true);
 
-        SetImageAlpha(0f);
+        if (finalFadeObject != null)
+            finalFadeObject.SetActive(false);
 
-        creditsCoroutine = StartCoroutine(PlayCreditsRoutine());
+        // Do not touch credits alpha when initial fade is disabled.
+        if (useCreditsFade)
+            SetCreditsAlpha(0f);
+
+        // Reset final fade only when that mode is requested.
+        if (useFinalFade)
+            SetFinalFadeAlpha(0f);
+
+        creditsCoroutine = StartCoroutine(
+            PlayCreditsRoutine(useCreditsFade, useFinalFade)
+        );
     }
 
-    private IEnumerator PlayCreditsRoutine()
+    private IEnumerator PlayCreditsRoutine(
+        bool useCreditsFade,
+        bool useFinalFade)
     {
-        float timer = 0f;
-
-        while (timer < fadeDuration)
+        // Optional initial fade-in.
+        if (useCreditsFade && creditsImage != null)
         {
-            timer += Time.deltaTime;
-            SetImageAlpha(Mathf.Clamp01(timer / fadeDuration));
-            yield return null;
+            yield return FadeImage(
+                creditsImage,
+                0f,
+                1f,
+                fadeDuration
+            );
         }
 
-        SetImageAlpha(1f);
-
-        if (creditsText == null)
-            yield break;
-
-        Vector2 position = creditsText.anchoredPosition;
-        position.y = startY;
-        creditsText.anchoredPosition = position;
-
-        float scrollTimer = 0f;
-
-        while (scrollTimer < scrollDuration)
+        // Reset and scroll credits text.
+        if (creditsText != null)
         {
-            scrollTimer += Time.deltaTime;
-
-            float progress = Mathf.Clamp01(
-                scrollTimer / scrollDuration
-            );
-
-            position = creditsText.anchoredPosition;
-            position.y = Mathf.Lerp(startY, endY, progress);
+            Vector2 position = creditsText.anchoredPosition;
+            position.y = startY;
             creditsText.anchoredPosition = position;
 
-            yield return null;
+            if (scrollDuration <= 0f)
+            {
+                position.y = endY;
+                creditsText.anchoredPosition = position;
+            }
+            else
+            {
+                float timer = 0f;
+
+                while (timer < scrollDuration)
+                {
+                    timer += Time.deltaTime;
+
+                    float progress = Mathf.Clamp01(
+                        timer / scrollDuration
+                    );
+
+                    position = creditsText.anchoredPosition;
+                    position.y = Mathf.Lerp(startY, endY, progress);
+                    creditsText.anchoredPosition = position;
+
+                    yield return null;
+                }
+
+                position = creditsText.anchoredPosition;
+                position.y = endY;
+                creditsText.anchoredPosition = position;
+            }
         }
 
-        position = creditsText.anchoredPosition;
-        position.y = endY;
-        creditsText.anchoredPosition = position;
+        // Fade out credits only AFTER scrolling has finished.
+        // Read the current alpha instead of forcing it to 1.
+        if (!useCreditsFade && creditsImage != null)
+        {
+            float currentAlpha = creditsImage.color.a;
 
+            yield return FadeImage(
+                creditsImage,
+                currentAlpha,
+                0f,
+                fadeDuration
+            );
+        }
+
+        // Optional final screen fade.
+        if (useFinalFade)
+        {
+            yield return new WaitForSeconds(waitBeforeFinalFade);
+
+            if (finalFadeObject != null)
+                finalFadeObject.SetActive(true);
+
+            if (finalFadeImage != null)
+            {
+                SetFinalFadeAlpha(0f);
+
+                yield return FadeImage(
+                    finalFadeImage,
+                    0f,
+                    1f,
+                    finalFadeDuration
+                );
+
+                SetFinalFadeAlpha(1f);
+            }
+        }
+
+        onReachedEnd?.Invoke();
         creditsCoroutine = null;
     }
 
-    private void SetImageAlpha(float alpha)
+    private IEnumerator FadeImage(
+        Image image,
+        float startAlpha,
+        float targetAlpha,
+        float duration)
     {
-        if (creditsImage == null)
+        if (image == null)
+            yield break;
+
+        SetImageAlpha(image, startAlpha);
+
+        if (duration <= 0f)
+        {
+            SetImageAlpha(image, targetAlpha);
+            yield break;
+        }
+
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            float progress = Mathf.Clamp01(timer / duration);
+
+            SetImageAlpha(
+                image,
+                Mathf.Lerp(startAlpha, targetAlpha, progress)
+            );
+
+            yield return null;
+        }
+
+        SetImageAlpha(image, targetAlpha);
+    }
+
+    private void SetCreditsAlpha(float alpha)
+    {
+        SetImageAlpha(creditsImage, alpha);
+    }
+
+    private void SetFinalFadeAlpha(float alpha)
+    {
+        SetImageAlpha(finalFadeImage, alpha);
+    }
+
+    private void SetImageAlpha(Image image, float alpha)
+    {
+        if (image == null)
             return;
 
-        Color color = creditsImage.color;
+        Color color = image.color;
         color.a = alpha;
-        creditsImage.color = color;
+        image.color = color;
+    }
+
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        UnityEngine.SceneManagement.SceneManager.LoadScene("MainMenu");
     }
 }

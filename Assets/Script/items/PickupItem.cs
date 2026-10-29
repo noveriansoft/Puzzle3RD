@@ -17,8 +17,18 @@ public class PickupItem : MonoBehaviour
     [SerializeField] private GameObject heldPrefab;
     [SerializeField] private HandPointType handPointType = HandPointType.Default;
 
+    [Header("Sound Effects")]
+    [SerializeField] private int pickupSEIndex = 0;
+    public int PickupSEIndex => pickupSEIndex;
+
     [Header("Return Marker - Optional")]
     [SerializeField] private GameObject returnMarker;
+
+    [Header("Trash")]
+    [SerializeField] private bool isTrash;
+
+    public bool IsTrash => isTrash;
+    public bool IsDisposed { get; private set; }
 
     public bool IsPickedUp { get; private set; }
 
@@ -79,5 +89,18 @@ public class PickupItem : MonoBehaviour
             returnMarker.SetActive(false);
 
         IsPickedUp = false;
+    }
+
+    public void DisposeItem()
+    {
+        IsDisposed = true;
+
+        if (worldObject != null)
+            worldObject.SetActive(false);
+
+        if (returnMarker != null)
+            returnMarker.SetActive(false);
+
+        IsPickedUp = true;
     }
 }

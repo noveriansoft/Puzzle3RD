@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+[RequireComponent(typeof(AudioSource))]
 public class MopSwing : MonoBehaviour
 {
     [Header("Broom")]
@@ -12,37 +13,92 @@ public class MopSwing : MonoBehaviour
     [SerializeField] private float endAngle = -84f;
     [SerializeField] private float speed = 8f;
 
-    [SerializeField] private DirtCleanable currentDirt;
-    private float currentAngle;
+    [Header("Sound Effects")]
+    [SerializeField] private int mopSEIndex = 0;
 
-    private void Start()
+    [Header("Cleaning")]
+    [SerializeField] private DirtCleanable currentDirt;
+
+    private AudioSource mopAudioSource;
+
+    private void Awake()
     {
-        currentAngle = startAngle;
+        mopAudioSource = GetComponent<AudioSource>();
+        mopAudioSource.playOnAwake = false;
+        mopAudioSource.loop = true;
+        mopAudioSource.spatialBlend = 0f;
+        mopAudioSource.Stop();
     }
 
     private void Update()
     {
-        // Sapunya harus ada / aktif
-        if (broomObject == null || !broomObject.activeInHierarchy)
+        if (PauseManager.IsPaused)
+        {
+            StopMopSound();
+            return;
+        }
+
+        bool isMopping =
+            broomObject != null &&
+            broomObject.activeInHierarchy &&
+            broomTransform != null &&
+            Mouse.current != null &&
+            Mouse.current.leftButton.isPressed;
+
+        if (!isMopping)
+        {
+            StopMopSound();
+            return;
+        }
+
+        PlayMopSound();
+
+        float t = Mathf.PingPong(Time.time * speed, 1f);
+        float angle = Mathf.Lerp(startAngle, endAngle, t);
+
+        Vector3 rotation = broomTransform.localEulerAngles;
+        rotation.x = angle;
+        broomTransform.localEulerAngles = rotation;
+
+        if (currentDirt != null &&
+            currentDirt.gameObject.activeInHierarchy)
+        {
+            currentDirt.Clean(Time.deltaTime);
+        }
+    }
+
+    private void PlayMopSound()
+    {      
+        if (SEManager.Instance == null)
+        {
+            StopMopSound();
+            return;
+        }
+
+        mopAudioSource.volume = SEManager.Instance.Volume;
+
+        if (mopAudioSource.isPlaying)
             return;
 
-        if (Mouse.current.leftButton.isPressed)
-        {
-            float t = Mathf.PingPong(Time.time * speed, 1f);
+        AudioClip clip = SEManager.Instance.GetSEClip(mopSEIndex);
 
-            currentAngle = Mathf.Lerp(startAngle, endAngle, t);
+        if (clip == null)
+            return;
 
-            Vector3 rot = broomTransform.localEulerAngles;
-            rot.x = currentAngle;
+        mopAudioSource.clip = clip;
+        mopAudioSource.Play();
+    }
 
-            broomTransform.localEulerAngles = rot;
+    private void StopMopSound()
+    {
+        if (mopAudioSource != null && mopAudioSource.isPlaying)
+            mopAudioSource.Stop();
+    }
 
-            // Bersihkan dirt kalau sapu sedang menyentuhnya
-            if (currentDirt != null)
-            {
-                currentDirt.Clean(Time.deltaTime);
-            }
-        }
+    private void OnDisable()
+    {
+        StopMopSound();
+        currentDirt = null;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -50,9 +106,7 @@ public class MopSwing : MonoBehaviour
         DirtCleanable dirt = other.GetComponent<DirtCleanable>();
 
         if (dirt != null)
-        {
             currentDirt = dirt;
-        }
     }
 
     private void OnTriggerExit(Collider other)
@@ -60,8 +114,6 @@ public class MopSwing : MonoBehaviour
         DirtCleanable dirt = other.GetComponent<DirtCleanable>();
 
         if (dirt != null && dirt == currentDirt)
-        {
             currentDirt = null;
-        }
     }
 }

@@ -29,6 +29,7 @@ public class ShotgunFire : MonoBehaviour
     [SerializeField] private float recoilDistance = 0.15f;
     [SerializeField] private float recoilReturnSpeed = 8f;
 
+    private bool waitForMouseRelease = true;
     private float nextFireTime;
     private Vector3 originalLocalPosition;
 
@@ -46,9 +47,19 @@ public class ShotgunFire : MonoBehaviour
         originalLocalPosition = transform.localPosition;
     }
 
-    private void Update()
+    private void LateUpdate()
     {
-        // Recoil kembali ke posisi awal
+        bool dialogueActive =
+            dialogueManager != null &&
+            dialogueManager.IsDialogueActive;
+
+        if (PauseManager.IsPaused || dialogueActive)
+        {
+            waitForMouseRelease = true;
+            return;
+        }
+
+        // Restore the weapon position after recoil.
         transform.localPosition = Vector3.Lerp(
             transform.localPosition,
             originalLocalPosition,
@@ -56,24 +67,35 @@ public class ShotgunFire : MonoBehaviour
         );
 
         if (Mouse.current == null || playerCamera == null)
-            return;
-
-        // Jangan menembak selama dialogue
-        if (dialogueManager != null &&
-            dialogueManager.IsDialogueActive)
-            return;
-
-        if (Mouse.current.leftButton.wasPressedThisFrame)
         {
-            if (Time.time >= nextFireTime)
-            {
-                Shoot();
-            }
+            waitForMouseRelease = true;
+            return;
+        }
+
+        // Ignore the click used to close dialogue or resume gameplay.
+        if (waitForMouseRelease)
+        {
+            if (!Mouse.current.leftButton.isPressed)
+                waitForMouseRelease = false;
+
+            return;
+        }
+
+        if (Mouse.current.leftButton.wasPressedThisFrame &&
+            Time.time >= nextFireTime)
+        {
+            Shoot();
         }
     }
 
     private void Shoot()
     {
+        if (PauseManager.IsPaused ||
+            (dialogueManager != null && dialogueManager.IsDialogueActive))
+        {
+            return;
+        }
+
         nextFireTime = Time.time + 1f / Mathf.Max(0.01f, fireRate);
 
         // Muzzle Flash
@@ -160,5 +182,10 @@ public class ShotgunFire : MonoBehaviour
             Debug.DrawRay(ray.origin, direction * range, Color.red, 2f);
             Debug.Log("Nothing hit on any layer.");
         }
+    }
+
+    private void OnEnable()
+    {
+        waitForMouseRelease = true;
     }
 }

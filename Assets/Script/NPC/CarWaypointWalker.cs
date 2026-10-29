@@ -21,6 +21,9 @@ public class CarWaypointWalker : MonoBehaviour
     [SerializeField] private float rotationSpeed = 5f;
     [SerializeField] private float reachDistance = 0.3f;
 
+    [Header("Driving Audio")]
+    [SerializeField] private AudioSource drivingAudioSource;
+
     [Header("Customer")]
     [SerializeField] private GameObject customerNPC;
     [SerializeField] private Transform npcSpawnPoint;
@@ -35,10 +38,20 @@ public class CarWaypointWalker : MonoBehaviour
     private bool isWaitingForCustomer;
     private bool finished;
 
-    private void Start()
+    private void Awake()
     {
         rb = GetComponent<Rigidbody>();
 
+        if (drivingAudioSource != null)
+        {
+            drivingAudioSource.playOnAwake = false;
+            drivingAudioSource.loop = true;
+            drivingAudioSource.Stop();
+        }
+    }
+
+    private void Start()
+    {
         if (customerNPC != null)
             customerNPC.SetActive(false);
     }
@@ -46,15 +59,26 @@ public class CarWaypointWalker : MonoBehaviour
     private void Update()
     {
         if (finished || isWaitingForCustomer)
+        {
+            StopDrivingSound();
             return;
+        }
 
-        if (waypoints == null || waypoints.Length == 0)
+        if (waypoints == null ||
+            waypoints.Length == 0 ||
+            currentWaypoint >= waypoints.Length)
+        {
+            StopDrivingSound();
             return;
+        }
 
         CarWaypointData waypoint = waypoints[currentWaypoint];
 
-        if (waypoint.point == null)
+        if (waypoint == null || waypoint.point == null)
+        {
+            StopDrivingSound();
             return;
+        }
 
         MoveToWaypoint(waypoint);
     }
@@ -72,9 +96,17 @@ public class CarWaypointWalker : MonoBehaviour
             return;
         }
 
+        if (moveSpeed <= 0f || Time.deltaTime <= 0f)
+        {
+            StopDrivingSound();
+            return;
+        }
+
+        PlayDrivingSound();
+
         Vector3 moveDirection = direction.normalized;
 
-        // Cek waypoint ada di depan atau belakang mobil
+        // Determine whether the waypoint is behind the car.
         float dot = Vector3.Dot(
             transform.forward,
             moveDirection
@@ -82,20 +114,12 @@ public class CarWaypointWalker : MonoBehaviour
 
         bool waypointBehind = dot < 0f;
 
-        // Mobil tetap bergerak ke waypoint
         Vector3 movement =
             moveDirection * moveSpeed * Time.deltaTime;
 
-        rb.MovePosition(
-            rb.position + movement
-        );
+        rb.MovePosition(rb.position + movement);
 
-        // Kalau waypoint di depan:
-        // moncong ngadep ke arah gerak
-        //
-        // Kalau waypoint di belakang:
-        // moncong ngadep ke arah sebaliknya dari arah gerak
-        // jadi terasa seperti mobil mundur sambil belok
+        // Face backward when reversing toward the waypoint.
         Vector3 facingDirection =
             waypointBehind ? -moveDirection : moveDirection;
 
@@ -119,6 +143,7 @@ public class CarWaypointWalker : MonoBehaviour
     {
         if (waypoint.customerStop)
         {
+            StopDrivingSound();
             StartCoroutine(CustomerStopRoutine());
             return;
         }
@@ -129,21 +154,20 @@ public class CarWaypointWalker : MonoBehaviour
     private IEnumerator CustomerStopRoutine()
     {
         isWaitingForCustomer = true;
+        StopDrivingSound();
 
         if (customerNPC == null)
         {
-            Debug.LogWarning("Customer NPC belum di-assign.");
+            Debug.LogWarning("Customer NPC is not assigned.", this);
 
             NextWaypoint();
             isWaitingForCustomer = false;
-
             yield break;
         }
 
-        // Lepaskan NPC dari mobil
+        // Detach the customer from the car.
         customerNPC.transform.SetParent(null);
 
-        // Spawn NPC di samping mobil
         if (npcSpawnPoint != null)
         {
             customerNPC.transform.position =
@@ -155,15 +179,12 @@ public class CarWaypointWalker : MonoBehaviour
 
         customerNPC.SetActive(true);
 
-        // Tunggu NPC menyelesaikan WaypointWalker
-        // sampai NPC disable sendiri
+        // Wait until the customer finishes and becomes inactive.
         yield return new WaitUntil(
-            () => !customerNPC.activeSelf
+            () => customerNPC == null || !customerNPC.activeSelf
         );
 
-        // Customer sudah kembali ke mobil
         NextWaypoint();
-
         isWaitingForCustomer = false;
     }
 
@@ -180,10 +201,38 @@ public class CarWaypointWalker : MonoBehaviour
             else
             {
                 finished = true;
+                StopDrivingSound();
 
                 if (disableOnFinish)
                     gameObject.SetActive(false);
             }
         }
+    }
+
+    private void PlayDrivingSound()
+    {
+        if (drivingAudioSource == null ||
+            drivingAudioSource.clip == null ||
+            !drivingAudioSource.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        if (!drivingAudioSource.isPlaying)
+            drivingAudioSource.Play();
+    }
+
+    private void StopDrivingSound()
+    {
+        if (drivingAudioSource != null &&
+            drivingAudioSource.isPlaying)
+        {
+            drivingAudioSource.Stop();
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopDrivingSound();
     }
 }

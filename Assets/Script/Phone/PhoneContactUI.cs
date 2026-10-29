@@ -61,6 +61,7 @@ public class PhoneContactUI : MonoBehaviour
     [Header("Pickup")]
     [SerializeField] private PickupSystem pickupSystem;
 
+    private bool callAudioPausedByGame;
     private int selectedIndex = 0;
     private int firstVisibleIndex = 0;
     private List<int> visibleContactIndices = new List<int>();
@@ -135,6 +136,9 @@ public class PhoneContactUI : MonoBehaviour
 
     private void Update()
     {
+        if (PauseManager.IsPaused)
+            return;
+
         phoneTransform.localPosition = Vector3.MoveTowards(
             phoneTransform.localPosition,
             phoneTargetPosition,
@@ -202,6 +206,9 @@ public class PhoneContactUI : MonoBehaviour
 
     private void TogglePhone()
     {
+        if (PauseManager.IsPaused)
+            return;
+
         if (currentState != PhoneState.ContactList &&
             currentState != PhoneState.IncomingCall)
             return;
@@ -564,6 +571,8 @@ public class PhoneContactUI : MonoBehaviour
 
     private void StopCallLoop()
     {
+        callAudioPausedByGame = false;
+
         if (callAudioSource == null)
             return;
 
@@ -644,4 +653,125 @@ public class PhoneContactUI : MonoBehaviour
             contact.dialogues.Length - 1
         );
     }
+
+    public void SetCallAudioPaused(bool paused)
+    {
+        if (callAudioSource == null)
+            return;
+
+        if (paused)
+        {
+            if (callAudioPausedByGame)
+                return;
+
+            callAudioPausedByGame = callAudioSource.isPlaying;
+
+            if (callAudioPausedByGame)
+                callAudioSource.Pause();
+        }
+        else
+        {
+            if (!callAudioPausedByGame)
+                return;
+
+            callAudioSource.UnPause();
+            callAudioPausedByGame = false;
+        }
+    }
+
+    #region checkpoint save/load
+    [System.Serializable]
+    private class ContactCheckpointState
+    {
+        public string phoneNumber;
+        public int dialogueIndex;
+        public bool showInContacts;
+    }
+
+    [System.Serializable]
+    private class PhoneCheckpointData
+    {
+        public List<ContactCheckpointState> contacts =
+            new List<ContactCheckpointState>();
+    }
+
+    public string CaptureCheckpointData()
+    {
+        PhoneCheckpointData data = new PhoneCheckpointData();
+        HashSet<string> usedNumbers = new HashSet<string>();
+
+        foreach (ContactData contact in contacts)
+        {
+            if (contact == null)
+                continue;
+
+            if (string.IsNullOrWhiteSpace(contact.phoneNumber))
+            {
+                Debug.LogWarning(
+                    $"Phone number is missing for contact: {contact.contactName}",
+                    this
+                );
+                continue;
+            }
+
+            if (!usedNumbers.Add(contact.phoneNumber))
+            {
+                Debug.LogError(
+                    $"Duplicate contact phone number: {contact.phoneNumber}",
+                    this
+                );
+                continue;
+            }
+
+            data.contacts.Add(new ContactCheckpointState
+            {
+                phoneNumber = contact.phoneNumber,
+                dialogueIndex = contact.currentDialogueIndex,
+                showInContacts = contact.showInContacts
+            });
+        }
+
+        return JsonUtility.ToJson(data);
+    }
+
+    public void RestoreCheckpointData(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+            return;
+
+        PhoneCheckpointData data =
+            JsonUtility.FromJson<PhoneCheckpointData>(json);
+
+        if (data == null || data.contacts == null)
+            return;
+
+        foreach (ContactData contact in contacts)
+        {
+            if (contact == null ||
+                string.IsNullOrWhiteSpace(contact.phoneNumber))
+            {
+                continue;
+            }
+
+            foreach (ContactCheckpointState saved in data.contacts)
+            {
+                if (saved.phoneNumber != contact.phoneNumber)
+                    continue;
+
+                int dialogueCount = contact.dialogues != null
+                    ? contact.dialogues.Length
+                    : 0;
+
+                contact.currentDialogueIndex = dialogueCount > 0
+                    ? Mathf.Clamp(saved.dialogueIndex, 0, dialogueCount - 1)
+                    : 0;
+
+                contact.showInContacts = saved.showInContacts;
+                break;
+            }
+        }
+
+        RefreshVisibleContacts();
+    }
+    #endregion
 }

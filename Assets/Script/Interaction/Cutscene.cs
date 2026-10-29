@@ -27,7 +27,6 @@ public class Cutscene : MonoBehaviour
 
     [Header("Ending")]
     [SerializeField] private EndingManager endingManager;
-    [SerializeField] private EndingManager.EndingType endingType;
 
     private void Start()
     {
@@ -87,9 +86,6 @@ public class Cutscene : MonoBehaviour
 
         if (endContent != null)
             endContent.SetActive(true);
-
-        if (endingManager != null)
-            endingManager.ShowEnding(endingType);
     }
 
     private IEnumerator FadeEndUI()

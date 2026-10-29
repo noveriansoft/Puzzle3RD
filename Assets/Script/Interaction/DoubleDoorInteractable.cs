@@ -23,6 +23,11 @@ public class DoubleDoorInteractable : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private float openDuration = 1f;
 
+    [Header("Door Audio")]
+    [SerializeField] private AudioSource doorAudioSource;
+    [SerializeField] private AudioClip doorOpenedClip;
+    [SerializeField, Range(0f, 1f)] private float doorVolume = 1f;
+
     [Header("Cutscene")]
     [SerializeField] private Cutscene endCutscene;
 
@@ -87,6 +92,11 @@ public class DoubleDoorInteractable : MonoBehaviour
     private IEnumerator OpenDoorsRoutine()
     {
         isOpening = true;
+
+        if (doorAudioSource != null && doorOpenedClip != null)
+        {
+            doorAudioSource.PlayOneShot(doorOpenedClip, doorVolume);
+        }
 
         Quaternion leftStartRotation = leftDoor.localRotation;
         Quaternion rightStartRotation = rightDoor.localRotation;
@@ -161,6 +171,44 @@ public class DoubleDoorInteractable : MonoBehaviour
         if (endCutscene != null)
         {
             endCutscene.StartCutscene();
+        }
+
+        if (endCutscene != null)
+        {
+            endCutscene.StartCutscene();
+        }
+    }
+
+    public void SetOpenedForCheckpoint()
+    {
+        StopAllCoroutines();
+
+        isOpening = false;
+        isOpened = true;
+
+        if (pressEUI != null)
+            pressEUI.SetActive(false);
+
+        if (leftDoor != null)
+        {
+            Vector3 rotation = leftDoor.localEulerAngles;
+
+            if (useOpenX)
+                rotation.x = openX;
+
+            rotation.z = leftOpenZ;
+            leftDoor.localRotation = Quaternion.Euler(rotation);
+        }
+
+        if (rightDoor != null)
+        {
+            Vector3 rotation = rightDoor.localEulerAngles;
+
+            if (useOpenX)
+                rotation.x = openX;
+
+            rotation.z = rightOpenZ;
+            rightDoor.localRotation = Quaternion.Euler(rotation);
         }
     }
 }

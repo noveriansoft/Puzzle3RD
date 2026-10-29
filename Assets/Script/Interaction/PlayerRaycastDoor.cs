@@ -32,6 +32,12 @@ public class PlayerRaycastDoor : MonoBehaviour
     [SerializeField] private AudioClip closeSound;
     [SerializeField] private AudioClip lockedSound;
 
+    [Header("Checkpoint")]
+    [SerializeField] private string checkpointID = "StorageDoor";
+
+    public string CheckpointID => checkpointID;
+    public bool IsLocked => isLocked;
+
     private Quaternion closedRotation;
     private Quaternion openRotation;
 
@@ -84,6 +90,11 @@ public class PlayerRaycastDoor : MonoBehaviour
 
             ToggleDoor();
         }
+    }
+
+    public void RestoreCheckpointLock(bool locked)
+    {
+        isLocked = locked;
     }
 
     private bool IsLookingAtDoor()

@@ -22,6 +22,9 @@ public class PickupSystem : MonoBehaviour
     [Header("UI")]
     [SerializeField] private GameObject pressEUI;
 
+    [Header("Sound Effects")]
+    [SerializeField] private int disposeSEIndex = 1;
+
     private PickupItem currentTarget;
     private Transform currentHit;
 
@@ -139,6 +142,8 @@ public class PickupSystem : MonoBehaviour
         heldItem = item;
         heldObject = newHeldObject;
 
+        SEManager.Instance?.PlaySE(item.PickupSEIndex);
+
         SetPressE(false);
     }
 
@@ -187,5 +192,28 @@ public class PickupSystem : MonoBehaviour
     public PickupItem GetHeldItem()
     {
         return heldItem;
+    }
+
+    public bool IsHoldingTrash()
+    {
+        return heldItem != null && heldItem.IsTrash;
+    }
+
+    public void DisposeHeldTrash()
+    {
+        if (!IsHoldingTrash())
+            return;
+
+        SetPressE(false);
+
+        heldItem.DisposeItem();
+
+        if (heldObject != null)
+            Destroy(heldObject);
+
+        heldItem = null;
+        heldObject = null;
+
+        SEManager.Instance?.PlaySE(disposeSEIndex);
     }
 }

@@ -16,7 +16,8 @@ public class GameDirector : MonoBehaviour
         WaitSeconds,
         CustomEvent,
         AutomatedDialogue,
-        WaitForHandPointType
+        WaitForHandPointType,
+        DisposeAllTrash
     }
 
     [Serializable]
@@ -55,6 +56,11 @@ public class GameDirector : MonoBehaviour
         [Header("Callbacks")]
         public UnityEvent onStart;
         public UnityEvent onComplete;
+
+        [Header("Checkpoint")]
+        public bool saveCheckpoint;
+        public bool clearDirtAndTrashOnLoad;
+        public bool openCheckpointDoorsOnLoad;
     }
 
     [Header("Settings")]
@@ -90,19 +96,122 @@ public class GameDirector : MonoBehaviour
     private bool hasSeenNonMatchingItem;
     private bool itemWaitValid = true;
 
+    [Header("Trash Cuunt")]
+    private readonly List<PickupItem> trackedTrash = new();
+
+    public int RemainingTrashCount { get; private set; }
+    public int TotalTrashCount { get; private set; }
+
+    [Header("Dirt Count")]
+    public int RemainingDirtCount { get; private set; }
+    public int TotalDirtCount { get; private set; }
+
+    [Header("Checkpoint Doors")]
+    [SerializeField] private DoubleDoorInteractable[] checkpointDoors;
+
+    [Header("Checkpoint Spawn")]
+    [SerializeField] private Transform player;
+    [SerializeField] private Transform checkpointSpawnPoint;
+
+    private static int pendingDebugStepIndex = -1;
+    private bool isReloadingCheckpoint;
+
     private DirectorStep CurrentStep =>
         currentStepIndex >= 0 && currentStepIndex < steps.Count
             ? steps[currentStepIndex]
             : null;
 
-    private void Start()
+    private System.Collections.IEnumerator Start()
     {
-        if (autoStart)
+        int checkpointIndex = -1;
+
+        bool continueRequested = CheckpointSave.ContinueRequested;
+        CheckpointSave.ContinueRequested = false;
+
+        if (pendingDebugStepIndex >= 0)
+        {
+            checkpointIndex = pendingDebugStepIndex;
+        }
+        else if (continueRequested)
+        {
+            string sceneName =
+                UnityEngine.SceneManagement.SceneManager
+                    .GetActiveScene().name;
+
+            checkpointIndex = CheckpointSave.LoadIndex(sceneName);
+        }
+
+        pendingDebugStepIndex = -1;
+
+        if (checkpointIndex >= 0 && checkpointIndex < steps.Count)
+        {
+            // Allow scene objects to finish initialization.
+            yield return null;
+
+            MovePlayerToCheckpoint();
+
+            DirectorStep checkpoint = steps[checkpointIndex];
+
+            if (checkpoint.clearDirtAndTrashOnLoad)
+            {
+                ClearDirtAndTrashForCheckpoint();
+            }
+
+            if (checkpoint.openCheckpointDoorsOnLoad &&
+                checkpointDoors != null)
+            {
+                foreach (DoubleDoorInteractable door in checkpointDoors)
+                {
+                    if (door != null)
+                        door.SetOpenedForCheckpoint();
+                }
+            }
+
+            if (continueRequested)
+            {
+                string sceneName =
+                    UnityEngine.SceneManagement.SceneManager
+                        .GetActiveScene().name;
+
+                CheckpointSave.RestoreDoorLocks(sceneName);
+                CheckpointSave.RestoreObjectSwaps(sceneName);
+                CheckpointSave.RestorePhoneProgress(sceneName);
+            }
+
+            isRunning = true;
+            isCompleting = false;
+            currentStepIndex = checkpointIndex - 1;
+
+            NextStep();
+            yield break;
+        }
+
+        if (continueRequested)
+        {
+            Debug.LogWarning(
+                "The saved checkpoint is invalid. Starting a new sequence.",
+                this
+            );
+        }
+
+        if (autoStart || continueRequested)
             StartSequence();
     }
 
     private void Update()
     {
+        if (isReloadingCheckpoint)
+            return;
+
+        if (UnityEngine.InputSystem.Keyboard.current != null &&
+            UnityEngine.InputSystem.Keyboard.current.digit1Key.wasPressedThisFrame)
+        {
+#if UNITY_EDITOR
+            DebugLoadCheckpoint();
+            return;
+#endif
+        }
+
         if (!isRunning || isCompleting || CurrentStep == null)
             return;
 
@@ -132,6 +241,10 @@ public class GameDirector : MonoBehaviour
             case StepType.WaitForHandPointType:
                 if (itemWaitValid)
                     CheckHeldItemType();
+                break;
+
+            case StepType.DisposeAllTrash:
+                CheckTrash();
                 break;
         }
     }
@@ -187,6 +300,21 @@ public class GameDirector : MonoBehaviour
         if (!isRunning || currentStepIndex != startedIndex)
             return;
 
+        // Checkpoint saving should occur after the step's onStart event
+        if (step.saveCheckpoint)
+        {
+            string sceneName =
+                UnityEngine.SceneManagement.SceneManager
+                    .GetActiveScene().name;
+
+            CheckpointSave.Save(sceneName, currentStepIndex);
+
+            Debug.Log(
+                $"Checkpoint saved: {step.stepName} (index {currentStepIndex}).",
+                this
+            );
+        }
+
         switch (step.type)
         {
             case StepType.IncomingCall:
@@ -209,6 +337,11 @@ public class GameDirector : MonoBehaviour
                 trackedDirt = FindObjectsByType<DirtCleanable>(
                     FindObjectsSortMode.None
                 );
+
+                TotalDirtCount = trackedDirt.Length;
+                RemainingDirtCount = TotalDirtCount;
+
+                UpdateDirtObjective();
                 break;
 
             case StepType.SpawnNPC:
@@ -273,6 +406,10 @@ public class GameDirector : MonoBehaviour
                     heldItemAtStart.HandPointType !=
                     step.requiredHandPointType;
 
+                break;
+
+            case StepType.DisposeAllTrash:
+                CollectTrash();
                 break;
         }
     }
@@ -397,14 +534,31 @@ public class GameDirector : MonoBehaviour
         if (trackedDirt == null)
             return;
 
+        RemainingDirtCount = 0;
+
         foreach (DirtCleanable dirt in trackedDirt)
         {
             if (dirt != null &&
                 dirt.gameObject.activeInHierarchy)
-                return;
+            {
+                RemainingDirtCount++;
+            }
         }
 
-        CompleteCurrentStep();
+        UpdateDirtObjective();
+
+        if (RemainingDirtCount == 0)
+            CompleteCurrentStep();
+    }
+
+    private void UpdateDirtObjective()
+    {
+        if (objectiveText == null || CurrentStep == null)
+            return;
+
+        objectiveText.text =
+            $"{CurrentStep.objective}\n" +
+            $"Dirt Remaining: {RemainingDirtCount}/{TotalDirtCount}";
     }
 
     private void CheckObject()
@@ -447,4 +601,157 @@ public class GameDirector : MonoBehaviour
 
         NextStep();
     }
+
+    private void CollectTrash()
+    {
+        trackedTrash.Clear();
+
+        // Include agar sampah yang sedang dipegang tetap terdeteksi,
+        // meskipun objek aslinya sudah dinonaktifkan.
+        PickupItem[] items = FindObjectsByType<PickupItem>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (PickupItem item in items)
+        {
+            if (item != null && item.IsTrash)
+                trackedTrash.Add(item);
+        }
+
+        TotalTrashCount = trackedTrash.Count;
+        RemainingTrashCount = 0;
+
+        foreach (PickupItem item in trackedTrash)
+        {
+            if (item != null && !item.IsDisposed)
+                RemainingTrashCount++;
+        }
+
+        UpdateTrashObjective();
+    }
+
+    private void CheckTrash()
+    {
+        RemainingTrashCount = 0;
+
+        foreach (PickupItem item in trackedTrash)
+        {
+            if (item != null && !item.IsDisposed)
+                RemainingTrashCount++;
+        }
+
+        UpdateTrashObjective();
+
+        if (RemainingTrashCount == 0)
+            CompleteCurrentStep();
+    }
+
+    private void UpdateTrashObjective()
+    {
+        if (objectiveText == null || CurrentStep == null)
+            return;
+
+        objectiveText.text =
+            $"{CurrentStep.objective}\n" +
+            $"Trash Remaining: {RemainingTrashCount}/{TotalTrashCount}";
+    }
+
+    #region Checkpoint
+
+    public void ClearDirtAndTrashForCheckpoint()
+    {
+        DirtCleanable[] dirtObjects = FindObjectsByType<DirtCleanable>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (DirtCleanable dirt in dirtObjects)
+        {
+            dirt.gameObject.SetActive(false);
+        }
+
+        PickupItem[] items = FindObjectsByType<PickupItem>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        foreach (PickupItem item in items)
+        {
+            if (!item.IsTrash)
+                continue;
+
+            item.DisposeItem();
+            item.gameObject.SetActive(false);
+        }
+
+        //ClearDirtAndTrashForCheckpoint();
+    }
+
+    public void DebugLoadCheckpoint()
+    {
+        const int checkpointIndex = 21;
+
+        if (isReloadingCheckpoint)
+            return;
+
+        if (checkpointIndex >= steps.Count)
+        {
+            Debug.LogWarning(
+                "Checkpoint step index 9 is not available.",
+                this
+            );
+            return;
+        }
+
+        var scene =
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+
+        if (!Application.CanStreamedLevelBeLoaded(scene.name))
+        {
+            Debug.LogError(
+                "The gameplay scene must be included in the build scene list.",
+                this
+            );
+            return;
+        }
+
+        isReloadingCheckpoint = true;
+        pendingDebugStepIndex = checkpointIndex;
+
+        Time.timeScale = 1f;
+
+        UnityEngine.SceneManagement.SceneManager.LoadScene(scene.name);
+    }
+
+    private void MovePlayerToCheckpoint()
+    {
+        if (player == null || checkpointSpawnPoint == null)
+        {
+            Debug.LogWarning(
+                "Player or checkpoint spawn point is missing.",
+                this
+            );
+            return;
+        }
+
+        CharacterController controller =
+            player.GetComponent<CharacterController>();
+
+        bool wasEnabled = controller != null && controller.enabled;
+
+        if (wasEnabled)
+            controller.enabled = false;
+
+        player.SetPositionAndRotation(
+            checkpointSpawnPoint.position,
+            checkpointSpawnPoint.rotation
+        );
+
+        if (wasEnabled)
+            controller.enabled = true;
+
+        Physics.SyncTransforms();
+    }
+    #endregion
 }

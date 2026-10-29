@@ -1,54 +1,43 @@
 using UnityEngine;
-using TMPro;
 using UnityEngine.SceneManagement;
 
 public class EndingManager : MonoBehaviour
 {
-    public enum EndingType
+    [Header("Scene Settings")]
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
+
+    private bool isLoading;
+
+    public void BackToMenu()
     {
-        Ending1,
-        Ending2
-    }
-
-    [Header("Ending Text")]
-    [SerializeField] private TMP_Text endingDescription;
-
-    [TextArea]
-    [SerializeField] private string ending1Text;
-
-    [TextArea]
-    [SerializeField] private string ending2Text;
-
-    public void ShowEnding(EndingType endingType)
-    {
-        if (endingDescription == null)
+        if (isLoading)
             return;
 
-        switch (endingType)
-        {
-            case EndingType.Ending1:
-                endingDescription.text = ending1Text;
-                break;
+        isLoading = true;
 
-            case EndingType.Ending2:
-                endingDescription.text = ending2Text;
-                break;
-        }
-    }
+        CheckpointSave.ContinueRequested = false;
 
-    public void ExitGame()
-    {
-        Application.Quit();
-        Debug.Log("Exit Game");
+        Time.timeScale = 1f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#endif
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 
     public void RestartGame()
     {
+        if (isLoading)
+            return;
+
+        isLoading = true;
+
         Scene currentScene = SceneManager.GetActiveScene();
+
+        CheckpointSave.ContinueRequested =
+            CheckpointSave.HasCheckpoint(currentScene.name);
+
+        Time.timeScale = 1f;
+
         SceneManager.LoadScene(currentScene.name);
     }
 }
