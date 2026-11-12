@@ -75,6 +75,14 @@ public class PlayerGameOver : MonoBehaviour
             if (control == null || control == this)
                 continue;
 
+            // Never modify prefab assets.
+            if (!control.gameObject.scene.IsValid())
+                continue;
+
+            // Shooting is blocked through the game-over state.
+            if (control is ShotgunFire)
+                continue;
+
             control.enabled = false;
         }
 
@@ -88,8 +96,17 @@ public class PlayerGameOver : MonoBehaviour
 
             foreach (MonoBehaviour itemScript in itemScripts)
             {
-                if (itemScript != null && itemScript != this)
-                    itemScript.enabled = false;
+                if (itemScript == null || itemScript == this)
+                    continue;
+
+                // Never modify prefab assets.
+                if (!itemScript.gameObject.scene.IsValid())
+                    continue;
+
+                if (itemScript is ShotgunFire)
+                    continue;
+
+                itemScript.enabled = false;
             }
         }
 

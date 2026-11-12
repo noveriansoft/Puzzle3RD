@@ -53,7 +53,9 @@ public class ShotgunFire : MonoBehaviour
             dialogueManager != null &&
             dialogueManager.IsDialogueActive;
 
-        if (PauseManager.IsPaused || dialogueActive)
+        if (PlayerGameOver.IsGameOver ||
+            PauseManager.IsPaused ||
+            dialogueActive)
         {
             waitForMouseRelease = true;
             return;
@@ -90,7 +92,8 @@ public class ShotgunFire : MonoBehaviour
 
     private void Shoot()
     {
-        if (PauseManager.IsPaused ||
+        if (PlayerGameOver.IsGameOver ||
+            PauseManager.IsPaused ||
             (dialogueManager != null && dialogueManager.IsDialogueActive))
         {
             return;
